@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:aop="http://www.springframework.org/schema/aop"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+	<!--Spring-->
+	<!--开启注解的扫描，只扫描service和dao，不扫描controller-->
+	<context:component-scan base-package="cn.bilibili">
+		<!--配置被controller注解的不扫描-->
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"></context:exclude-filter>
+	</context:component-scan>
+
+	<!--配置spring事务功能-->
+	<!--1.配置事务管理器-->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	<!--2.配置事务的通知-->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<!--某一类切入点方法设置事务的属性-->
+			<!-- 配置事务的属性
+                isolation：用于指定事务的隔离级别。默认值是DEFAULT，表示使用数据库的默认隔离级别。
+                propagation：用于指定事务的传播行为。默认值是REQUIRED，表示一定会有事务，增删改的选择。查询方法可以选择SUPPORTS。
+                read-only：用于指定事务是否只读。只有查询方法才能设置为true。默认值是false，表示读写。
+                timeout：用于指定事务的超时时间，默认值是-1，表示永不超时。如果指定了数值，以秒为单位。
+                rollback-for：用于指定一个异常，当产生该异常时，事务回滚，产生其他异常时，事务不回滚。没有默认值。表示任何异常都回滚。
+                no-rollback-for：用于指定一个异常，当产生该异常时，事务不回滚，产生其他异常时事务回滚。没有默认值。表示任何异常都回滚。
+        -->
+			<tx:method name="*" propagation="REQUIRED" read-only="false"/>
+			<!--表示find开头的切入点 此通配优先级比上面的*高-->
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>
+	<!--3.配置事务aop-->
+	<aop:config>
+		<!--事务的切入点表达式-->
+		<aop:pointcut id="pc_tx" expression="execution(* cn.bilibili.service.impl.*.*(..))"></aop:pointcut>
+		<!--建立事务切入点与通知的对应关系-->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pc_tx"></aop:advisor>
+	</aop:config>
+
+
+	<!--spring整合mybatis-->
+	<!--配置druid数据源-->
+	<bean id="dataSource" class="cn.bilibili.utils.JDBCUtil" factory-method="getDataSource"></bean>
+
+	<!--配置SqlSessionFactory工厂-->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<!--扫描pojo包给所有pojo对象起别名 这样xxxdao.xml的实体类就不用写全类名了-->
+		<property name="typeAliasesPackage" value="cn.bilibili.domain"></property>
+	</bean>
+
+	<!--配置dao接口所在的包 生成包下所有接口的代理对象放入spring容器-->
+	<bean id="mapperScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="cn.bilibili.dao"></property>
+	</bean>
+
+</beans>
