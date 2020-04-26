@@ -22,5 +22,6 @@ public class Demo01 {
         list.stream().filter(s -> s.endsWith("5"))
                 .forEach(System.out::println);
 
+        //修改测试
     }
 }
