@@ -1,0 +1,6 @@
+#配置elasticsearch
+spring:
+  data:
+    elasticsearch:
+      cluster-name: elasticsearch
+      cluster-nodes: 192.168.11.128:9300  #ip:9300
